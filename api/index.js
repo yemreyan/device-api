@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const serverless = require("serverless-http"); // önemli!
 
 const app = express();
 app.use(cors());
@@ -34,18 +35,18 @@ const ttoDevices = Array.from({ length: 100 }, (_, i) => {
 });
 
 // -------------------------
-// Routes
+// Routes (tüm yollar /api altında olacak)
 // -------------------------
-app.get("/companies", (req, res) => res.json(companies));
-app.get("/tims", (req, res) => res.json(timDevices));
-app.get("/ttos", (req, res) => res.json(ttoDevices));
+app.get("/api/companies", (req, res) => res.json(companies));
+app.get("/api/tims", (req, res) => res.json(timDevices));
+app.get("/api/ttos", (req, res) => res.json(ttoDevices));
 
-app.get("/tim/:id/ttos", (req, res) => {
+app.get("/api/tim/:id/ttos", (req, res) => {
   const timId = parseInt(req.params.id);
   res.json(ttoDevices.filter(tto => tto.timId === timId));
 });
 
-app.get("/company/:id/devices", (req, res) => {
+app.get("/api/company/:id/devices", (req, res) => {
   const companyId = parseInt(req.params.id);
   res.json({
     tims: timDevices.filter(tim => tim.companyId === companyId),
@@ -54,6 +55,7 @@ app.get("/company/:id/devices", (req, res) => {
 });
 
 // -------------------------
-// Export Vercel handler
+// Vercel Export
 // -------------------------
 module.exports = app;
+module.exports.handler = serverless(app);
