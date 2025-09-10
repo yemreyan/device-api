@@ -1,14 +1,4 @@
-const express = require("express");
-const cors = require("cors");
-const serverless = require("serverless-http"); // önemli!
-
-const app = express();
-app.use(cors());
-app.use(express.json());
-
-// -------------------------
-// Mock Data
-// -------------------------
+// serverless-http olmadan, direkt handler olarak
 const companies = Array.from({ length: 10 }, (_, i) => ({
   id: i + 1,
   name: `Firma-${i + 1}`
@@ -34,28 +24,33 @@ const ttoDevices = Array.from({ length: 100 }, (_, i) => {
   };
 });
 
-// -------------------------
-// Routes (tüm yollar /api altında olacak)
-// -------------------------
-app.get("/api/companies", (req, res) => res.json(companies));
-app.get("/api/tims", (req, res) => res.json(timDevices));
-app.get("/api/ttos", (req, res) => res.json(ttoDevices));
+module.exports = (req, res) => {
+  const { url, method } = req;
 
-app.get("/api/tim/:id/ttos", (req, res) => {
-  const timId = parseInt(req.params.id);
-  res.json(ttoDevices.filter(tto => tto.timId === timId));
-});
+  if (url === "/api/companies" && method === "GET") {
+    return res.status(200).json(companies);
+  }
 
-app.get("/api/company/:id/devices", (req, res) => {
-  const companyId = parseInt(req.params.id);
-  res.json({
-    tims: timDevices.filter(tim => tim.companyId === companyId),
-    ttos: ttoDevices.filter(tto => tto.companyId === companyId)
-  });
-});
+  if (url === "/api/tims" && method === "GET") {
+    return res.status(200).json(timDevices);
+  }
 
-// -------------------------
-// Vercel Export
-// -------------------------
-module.exports = app;
-module.exports.handler = serverless(app);
+  if (url === "/api/ttos" && method === "GET") {
+    return res.status(200).json(ttoDevices);
+  }
+
+  if (url.startsWith("/api/tim/") && url.endsWith("/ttos") && method === "GET") {
+    const timId = parseInt(url.split("/")[3]);
+    return res.status(200).json(ttoDevices.filter(tto => tto.timId === timId));
+  }
+
+  if (url.startsWith("/api/company/") && url.endsWith("/devices") && method === "GET") {
+    const companyId = parseInt(url.split("/")[3]);
+    return res.status(200).json({
+      tims: timDevices.filter(tim => tim.companyId === companyId),
+      ttos: ttoDevices.filter(tto => tto.companyId === companyId)
+    });
+  }
+
+  return res.status(404).json({ error: "Not Found" });
+};
